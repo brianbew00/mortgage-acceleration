@@ -180,6 +180,8 @@ function calculateWithHELOC(balance, rate, payment, helocRate, surplus, lumpSumM
 }
 
 // Tab functionality
+console.log("script.js loaded and executed");
+
 window.showTable = function (index) {
     const tables = document.querySelectorAll(".table-container");
     const tabs = document.querySelectorAll(".tab");
