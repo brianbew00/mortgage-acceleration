@@ -172,3 +172,19 @@ function renderChart(scenarios) {
         }
     });
 }
+function showTable(index) {
+    console.log(`Switching to table ${index}`);
+
+    // Select all table containers and tabs
+    const tables = document.querySelectorAll(".table-container");
+    const tabs = document.querySelectorAll(".tab");
+
+    // Hide all tables and remove active class from tabs
+    tables.forEach((table, i) => {
+        table.classList.toggle("active", i === index);
+    });
+
+    tabs.forEach((tab, i) => {
+        tab.classList.toggle("active", i === index);
+    });
+}
