@@ -284,19 +284,20 @@ window.showTable = function (index) {
     const tables = document.querySelectorAll(".table-container");
     const tabs = document.querySelectorAll(".tab");
 
-    tables.forEach((table, i) => table.classList.toggle("active", i === index));
-    tabs.forEach((tab, i) => tab.classList.toggle("active", i === index));
-};
-
-// Attach event listeners to tabs
-document.addEventListener("DOMContentLoaded", function () {
-    const tabs = document.querySelectorAll(".tab");
-
-    tabs.forEach((tab, index) => {
-        tab.addEventListener("click", () => {
-            showTable(index);
-        });
+    tables.forEach((table, i) => {
+        table.classList.toggle("active", i === index);
+        table.style.display = i === index ? "block" : "none"; // Ensure correct display property
     });
 
-    console.log("Tab event listeners attached successfully.");
+    tabs.forEach((tab, i) => {
+        tab.classList.toggle("active", i === index);
+    });
+
+    console.log(`Showing table index: ${index}`);
+};
+
+// Ensure the first table is displayed on load
+document.addEventListener("DOMContentLoaded", function () {
+    calculate(); // Generate tables and charts
+    showTable(0); // Display the first table by default
 });
