@@ -190,3 +190,15 @@ window.showTable = function (index) {
     console.log(`showTable called for index: ${index}`);
 };
 
+// Attach event listeners to tabs
+document.addEventListener("DOMContentLoaded", function () {
+    const tabs = document.querySelectorAll(".tab");
+
+    tabs.forEach((tab, index) => {
+        tab.addEventListener("click", () => {
+            showTable(index);
+        });
+    });
+
+    console.log("Tab event listeners attached successfully.");
+});
