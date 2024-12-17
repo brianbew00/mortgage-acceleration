@@ -23,7 +23,8 @@ function calculate() {
     const netIncome = parseFloat(document.getElementById('netIncome').value);
     const monthlyExpenses = parseFloat(document.getElementById('monthlyExpenses').value);
     const surplusIncome = netIncome - monthlyExpenses;
-    const lumpSumMultiple = 4; // Lump sum multiple placeholder
+    const lumpSumMultiple = 4; // Lump sum multiple placeholder;
+    const averageDailyOffset = parseFloat(document.getElementById('averageDailyOffset').value);
 
     const annualBalances = { noExtra: [], extraPrincipal: [], heloc: [] };
     const annualInterest = { noExtra: [], extraPrincipal: [], heloc: [] };
@@ -35,8 +36,7 @@ function calculate() {
     calculateExtraPrincipal(mortgageBalance, mortgageRate, mortgagePayment, surplusIncome, annualBalances, annualInterest);
 
     // Scenario 3: Extra Payments with HELOC
-    calculateWithHELOC(mortgageBalance, mortgageRate, mortgagePayment, helocRate, surplusIncome, lumpSumMultiple);
-}
+    calculateWithHELOC(mortgageBalance, mortgageRate, mortgagePayment, helocRate, surplusIncome, lumpSumMultiple, averageDailyOffset);
 
 // Scenario 1: No Extra Payments
 function calculateNoExtra(balance, rate, payment) {
@@ -116,42 +116,57 @@ function calculateExtraPrincipal(balance, rate, payment, surplus) {
 }
 
 // Scenario 3: Extra Payments with HELOC
-function calculateWithHELOC(balance, rate, payment, helocRate, surplus, lumpSumMultiple) {
+function calculateWithHELOC(balance, rate, payment, helocRate, surplus, lumpSumMultiple, averageDailyOffset) {
     let helocBalance = 0;
     let totalInterest = 0;
     let months = 0;
 
     let table = `<div class='table-wrapper'><table>
-        <tr><th>Month</th><th>Mortgage Payment</th><th>Mortgage Interest</th><th>Principal</th><th>Lump Sum</th><th>HELOC Interest</th><th>HELOC Payment</th><th>HELOC Balance</th><th>Mortgage Balance</th></tr>`;
+        <tr><th>Month</th><th>Mortgage Payment</th><th>Mortgage Interest</th><th>Principal</th>
+        <th>Lump Sum (HELOC)</th><th>HELOC Interest</th><th>HELOC Payment</th><th>HELOC Balance</th><th>Mortgage Balance</th></tr>`;
 
     // Add Row 0
     table += `<tr>
-        <td>0</td><td></td><td></td><td></td><td></td><td></td><td></td>
-        <td>${formatCurrency(helocBalance)}</td>
-        <td>${formatCurrency(balance)}</td>
+        <td>0</td><td></td><td></td><td></td><td></td><td></td>
+        <td></td><td>${formatCurrency(helocBalance)}</td><td>${formatCurrency(balance)}</td>
     </tr>`;
 
     while (balance > 0 || helocBalance > 0) {
-        const mortgageInterest = balance * rate;
-        let principal = Math.min(payment - mortgageInterest, balance);
-
-        let lumpSum = (months % 6 === 0 && balance > 0) ? surplus * lumpSumMultiple : 0;
-        helocBalance += lumpSum;
-        balance -= lumpSum;
-
-        const helocInterest = helocBalance * helocRate;
-        let helocPayment = surplus - helocInterest;
-        helocBalance = Math.max(helocBalance + helocInterest - helocPayment, 0);
-        balance = Math.max(balance - principal, 0);
-
         months++;
 
+        // Step 1: Calculate mortgage interest and principal
+        const mortgageInterest = balance > 0 ? balance * rate : 0;
+        let principal = Math.min(payment - mortgageInterest, balance);
+
+        // Step 2: Calculate HELOC interest (considering average daily offset)
+        const effectiveHELOCBalance = Math.max(helocBalance - averageDailyOffset, 0);
+        const helocInterest = effectiveHELOCBalance > 0 ? effectiveHELOCBalance * helocRate : 0;
+
+        // Step 3: Check if a new lump sum HELOC payment can be applied
+        let lumpSumHELOC = 0;
+        if (months === 1 || (helocBalance + helocInterest < surplus && balance > 0)) {
+            lumpSumHELOC = Math.min(surplus * lumpSumMultiple, balance);
+            helocBalance += lumpSumHELOC; // Add lump sum to HELOC
+            balance -= lumpSumHELOC;      // Reduce mortgage balance
+        }
+
+        // Step 4: Apply surplus to HELOC payment
+        const helocPayment = surplus; // HELOC payment strictly uses surplus income
+        helocBalance = Math.max(helocBalance + helocInterest - helocPayment, 0);
+
+        // Step 5: Reduce mortgage balance
+        balance = Math.max(balance - principal, 0);
+
+        // Step 6: Accumulate total interest
+        totalInterest += mortgageInterest + helocInterest;
+
+        // Step 7: Add a row to the table
         table += `<tr>
             <td>${months}</td>
             <td>${formatCurrency(payment)}</td>
             <td>${formatCurrency(mortgageInterest)}</td>
             <td>${formatCurrency(principal)}</td>
-            <td>${formatCurrency(lumpSum)}</td>
+            <td>${formatCurrency(lumpSumHELOC)}</td>
             <td>${formatCurrency(helocInterest)}</td>
             <td>${formatCurrency(helocPayment)}</td>
             <td>${formatCurrency(helocBalance)}</td>
