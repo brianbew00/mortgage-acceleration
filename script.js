@@ -3,6 +3,7 @@ let chartInstance;
 document.addEventListener("DOMContentLoaded", function () {
     console.log("DOM fully loaded, running calculations...");
     calculate();
+    showTable(0); // Default to the first table
 });
 
 function calculate() {
@@ -29,14 +30,14 @@ function calculate() {
 
     // Render tables
     renderTable("tableNoExtra", noExtraData, "No Extra Payments");
-    renderTable("tableExtra", extraPaymentData, "Extra Monthly Payments");
-    renderTable("tableWithHELOC", helocData, "HELOC Payments");
+    renderTable("tableExtra", extraPaymentData, "Extra Monthly Principal Payments");
+    renderTable("tableWithHELOC", helocData, "Extra Payments with HELOC");
 
     // Render chart
     renderChart([noExtraData, extraPaymentData, helocData]);
 }
 
-// Function to calculate standard mortgage amortization
+// Function to calculate mortgage with optional extra payments
 function calculateMortgage(balance, rate, payment, extraPrincipal) {
     const tableData = [];
     let month = 0;
@@ -124,7 +125,7 @@ function renderTable(tableId, data, title) {
     document.getElementById(tableId).innerHTML = `<h3>${title}</h3>` + table;
 }
 
-// Function to render the chart
+// Function to render chart
 function renderChart(scenarios) {
     const ctx = document.getElementById("comparisonChart").getContext("2d");
 
@@ -163,28 +164,21 @@ function renderChart(scenarios) {
             plugins: {
                 title: {
                     display: true,
-                    text: "Mortgage Balance Over Time (All Scenarios)"
+                    text: "Mortgage Balance Over Time"
                 }
             },
             scales: {
-                y: { beginAtZero: false, title: { display: true, text: "Balance ($)" } } 
+                y: { beginAtZero: false, title: { display: true, text: "Balance ($)" } }
             }
         }
     });
 }
-function showTable(index) {
-    console.log(`Switching to table ${index}`);
 
-    // Select all table containers and tabs
+// Function to toggle tables
+function showTable(index) {
     const tables = document.querySelectorAll(".table-container");
     const tabs = document.querySelectorAll(".tab");
 
-    // Hide all tables and remove active class from tabs
-    tables.forEach((table, i) => {
-        table.classList.toggle("active", i === index);
-    });
-
-    tabs.forEach((tab, i) => {
-        tab.classList.toggle("active", i === index);
-    });
+    tables.forEach((table, i) => table.classList.toggle("active", i === index));
+    tabs.forEach((tab, i) => tab.classList.toggle("active", i === index));
 }

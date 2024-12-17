@@ -65,6 +65,14 @@ button:hover {
     color: #fff;
 }
 
+.table-container {
+    display: none; /* Hide all tables by default */
+}
+
+.table-container.active {
+    display: block; /* Show the active table */
+}
+
 .table-wrapper {
     overflow-y: auto;
     max-height: 300px;
