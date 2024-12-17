@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mortgage and HELOC Payment Calculator</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body onload="calculate()">
+    <div class="container">
+        <div class="calculator">
+            <div class="header">Mortgage and HELOC Payment Calculator</div>
+            
+            <div class="inputs-chart section">
+                <div class="input-column">
+                    <label>Current Mortgage Balance ($):</label>
+                    <input type="number" id="mortgageBalance" value="400000" required>
+
+                    <label>Current Mortgage Rate (%):</label>
+                    <input type="number" id="mortgageRate" step="0.01" value="4" required>
+
+                    <label>Current Mortgage Payment ($):</label>
+                    <input type="number" id="mortgagePayment" value="2000" required>
+
+                    <label>HELOC Rate (%):</label>
+                    <input type="number" id="helocRate" step="0.01" value="10" required>
+
+                    <label>Net Monthly Income ($):</label>
+                    <input type="number" id="netIncome" value="10000" required>
+
+                    <label>Monthly Expenses ($):</label>
+                    <input type="number" id="monthlyExpenses" value="9000" required>
+
+                    <label>Lump Sum Multiple (HELOC Advance):</label>
+                    <input type="number" id="lumpSumMultiple" value="4" required>
+
+                    <label>Average Daily Balance Offset ($):</label>
+                    <input type="number" id="averageDailyOffset" value="2500" required>
+
+                    <button onclick="calculate()">Calculate</button>
+                </div>
+
+                <div class="chart-column">
+                    <label for="chartType">Select Comparison Type:</label>
+                    <select id="chartType" onchange="updateChart()">
+                        <option value="balance">Mortgage Balance</option>
+                        <option value="interest">Cumulative Interest Expense</option>
+                    </select>
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+            </div>
+
+            <div class="table-section">
+                <div class="tab-container">
+                    <div class="tab active" onclick="showTable(0)">No Extra Payments</div>
+                    <div class="tab" onclick="showTable(1)">Extra Monthly Principal Payments</div>
+                    <div class="tab" onclick="showTable(2)">Extra Payments with HELOC</div>
+                </div>
+
+                <div id="results">
+                    <div class="table-container active" id="tableNoExtra"></div>
+                    <div class="table-container" id="tableExtra"></div>
+                    <div class="table-container" id="tableWithHELOC"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
