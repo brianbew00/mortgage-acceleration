@@ -179,14 +179,13 @@ function calculateWithHELOC(balance, rate, payment, helocRate, surplus, lumpSumM
 }
 
 // Tab functionality
-function showTable(index) {
+window.showTable = function (index) {
     const tables = document.querySelectorAll(".table-container");
     const tabs = document.querySelectorAll(".tab");
 
     tables.forEach((table, i) => table.classList.toggle("active", i === index));
     tabs.forEach((tab, i) => tab.classList.toggle("active", i === index));
-}
 
-// Add a log to confirm the function is loaded
-console.log("showTable function is loaded successfully.");
+    console.log(`showTable called for index: ${index}`);
+};
 
