@@ -1,3 +1,4 @@
+console.log("script.js loaded and executed");
 let chartInstance;
 
 document.addEventListener("DOMContentLoaded", function () {
