@@ -12,7 +12,6 @@ function formatCurrency(value) {
     return `$${value.toFixed(2)}`;
 }
 
-// Main calculation function
 function calculate() {
     console.log("Calculating all scenarios...");
 
@@ -24,8 +23,8 @@ function calculate() {
     const netIncome = parseFloat(document.getElementById('netIncome').value);
     const monthlyExpenses = parseFloat(document.getElementById('monthlyExpenses').value);
     const surplusIncome = netIncome - monthlyExpenses;
-    const lumpSumMultiple = 4; // Lump sum multiple placeholder;
-    const averageDailyOffset = parseFloat(document.getElementById('averageDailyOffset').value);
+    const averageDailyOffset = 0; // Placeholder
+    const initialLumpSum = surplusIncome * 4; // Lump sum multiple placeholder
 
     const annualBalances = { noExtra: [], extraPrincipal: [], heloc: [] };
     const annualInterest = { noExtra: [], extraPrincipal: [], heloc: [] };
@@ -37,21 +36,18 @@ function calculate() {
     calculateExtraPrincipal(mortgageBalance, mortgageRate, mortgagePayment, surplusIncome, annualBalances, annualInterest);
 
     // Scenario 3: Extra Payments with HELOC
-    calculateWithHELOC(mortgageBalance, mortgageRate, mortgagePayment, helocRate, surplusIncome, lumpSumMultiple, averageDailyOffset);
+    calculateWithHELOC(
+        mortgageBalance, mortgageRate, mortgagePayment, helocRate,
+        surplusIncome, initialLumpSum, averageDailyOffset,
+        annualBalances, annualInterest
+    );
+}
 
 // Scenario 1: No Extra Payments
-function calculateNoExtra(balance, rate, payment) {
+function calculateNoExtra(balance, rate, payment, annualBalances, annualInterest) {
     let totalInterest = 0;
     let months = 0;
-
-    let table = `<div class='table-wrapper'><table>
-        <tr><th>Month</th><th>Payment</th><th>Interest</th><th>Principal</th><th>Balance</th></tr>`;
-    
-    // Add Row 0
-    table += `<tr>
-        <td>0</td><td></td><td></td><td></td>
-        <td>${formatCurrency(balance)}</td>
-    </tr>`;
+    let table = "<div class='table-wrapper'><table><tr><th>Month</th><th>Payment</th><th>Interest</th><th>Principal</th><th>Balance</th></tr>";
 
     while (balance > 0) {
         const interest = balance * rate;
@@ -67,6 +63,11 @@ function calculateNoExtra(balance, rate, payment) {
             <td>${formatCurrency(principal)}</td>
             <td>${formatCurrency(balance)}</td>
         </tr>`;
+
+        if (months % 12 === 0 || balance === 0) {
+            annualBalances.noExtra.push(balance);
+            annualInterest.noExtra.push(totalInterest);
+        }
     }
 
     table += "</table></div>";
@@ -74,24 +75,16 @@ function calculateNoExtra(balance, rate, payment) {
 }
 
 // Scenario 2: Extra Monthly Principal Payments
-function calculateExtraPrincipal(balance, rate, payment, surplus) {
+function calculateExtraPrincipal(balance, rate, payment, surplus, annualBalances, annualInterest) {
     let totalInterest = 0;
     let months = 0;
-
-    let table = `<div class='table-wrapper'><table>
-        <tr><th>Month</th><th>Payment</th><th>Interest</th><th>Principal</th><th>Extra Principal</th><th>Balance</th></tr>`;
-    
-    // Add Row 0
-    table += `<tr>
-        <td>0</td><td></td><td></td><td></td><td></td>
-        <td>${formatCurrency(balance)}</td>
-    </tr>`;
+    let table = "<div class='table-wrapper'><table><tr><th>Month</th><th>Payment</th><th>Interest</th><th>Principal</th><th>Extra Principal</th><th>Balance</th></tr>";
 
     while (balance > 0) {
         const interest = balance * rate;
         let extraPrincipal = surplus;
         let principal = Math.min(payment - interest, balance);
-        let totalPayment = payment + extraPrincipal;
+        let totalPayment = principal + interest + extraPrincipal;
 
         if (totalPayment > balance + interest) {
             extraPrincipal = balance + interest - payment;
@@ -110,6 +103,11 @@ function calculateExtraPrincipal(balance, rate, payment, surplus) {
             <td>${formatCurrency(extraPrincipal)}</td>
             <td>${formatCurrency(balance)}</td>
         </tr>`;
+
+        if (months % 12 === 0 || balance === 0) {
+            annualBalances.extraPrincipal.push(balance);
+            annualInterest.extraPrincipal.push(totalInterest);
+        }
     }
 
     table += "</table></div>";
@@ -117,51 +115,29 @@ function calculateExtraPrincipal(balance, rate, payment, surplus) {
 }
 
 // Scenario 3: Extra Payments with HELOC
-function calculateWithHELOC(balance, rate, payment, helocRate, surplus, lumpSumMultiple, averageDailyOffset) {
+function calculateWithHELOC(balance, rate, payment, helocRate, surplus, lumpSum, averageDailyOffset, annualBalances, annualInterest) {
     let helocBalance = 0;
     let totalInterest = 0;
     let months = 0;
 
-    let table = `<div class='table-wrapper'><table>
-        <tr><th>Month</th><th>Mortgage Payment</th><th>Mortgage Interest</th><th>Principal</th>
-        <th>Lump Sum (HELOC)</th><th>HELOC Interest</th><th>HELOC Payment</th><th>HELOC Balance</th><th>Mortgage Balance</th></tr>`;
-
-    // Add Row 0
-    table += `<tr>
-        <td>0</td><td></td><td></td><td></td><td></td><td></td>
-        <td></td><td>${formatCurrency(helocBalance)}</td><td>${formatCurrency(balance)}</td>
-    </tr>`;
+    let table = "<div class='table-wrapper'><table><tr><th>Month</th><th>Mortgage Payment</th><th>Mortgage Interest</th><th>Principal</th><th>Lump Sum</th><th>HELOC Interest</th><th>HELOC Payment</th><th>HELOC Balance</th><th>Mortgage Balance</th></tr>";
 
     while (balance > 0 || helocBalance > 0) {
-        months++;
-
-        // Step 1: Calculate mortgage interest and principal
-        const mortgageInterest = balance > 0 ? balance * rate : 0;
+        const mortgageInterest = balance * rate;
         let principal = Math.min(payment - mortgageInterest, balance);
+        let lumpSumHELOC = months === 1 ? lumpSum : 0;
 
-        // Step 2: Calculate HELOC interest (considering average daily offset)
-        const effectiveHELOCBalance = Math.max(helocBalance - averageDailyOffset, 0);
-        const helocInterest = effectiveHELOCBalance > 0 ? effectiveHELOCBalance * helocRate : 0;
-
-        // Step 3: Check if a new lump sum HELOC payment can be applied
-        let lumpSumHELOC = 0;
-        if (months === 1 || (helocBalance + helocInterest < surplus && balance > 0)) {
-            lumpSumHELOC = Math.min(surplus * lumpSumMultiple, balance);
-            helocBalance += lumpSumHELOC; // Add lump sum to HELOC
-            balance -= lumpSumHELOC;      // Reduce mortgage balance
-        }
-
-        // Step 4: Apply surplus to HELOC payment
-        const helocPayment = surplus; // HELOC payment strictly uses surplus income
-        helocBalance = Math.max(helocBalance + helocInterest - helocPayment, 0);
-
-        // Step 5: Reduce mortgage balance
+        helocBalance += lumpSumHELOC;
+        balance -= lumpSumHELOC;
         balance = Math.max(balance - principal, 0);
 
-        // Step 6: Accumulate total interest
-        totalInterest += mortgageInterest + helocInterest;
+        const helocInterest = helocBalance * helocRate;
+        let helocPayment = surplus - helocInterest;
+        helocBalance = Math.max(helocBalance + helocInterest - helocPayment, 0);
 
-        // Step 7: Add a row to the table
+        totalInterest += mortgageInterest + helocInterest;
+        months++;
+
         table += `<tr>
             <td>${months}</td>
             <td>${formatCurrency(payment)}</td>
@@ -173,11 +149,17 @@ function calculateWithHELOC(balance, rate, payment, helocRate, surplus, lumpSumM
             <td>${formatCurrency(helocBalance)}</td>
             <td>${formatCurrency(balance)}</td>
         </tr>`;
+
+        if (months % 12 === 0 || (balance === 0 && helocBalance === 0)) {
+            annualBalances.heloc.push(balance + helocBalance);
+            annualInterest.heloc.push(totalInterest);
+        }
     }
 
     table += "</table></div>";
     document.getElementById("tableWithHELOC").innerHTML = table;
 }
+
 
 // Tab functionality
 console.log("script.js loaded and executed");
