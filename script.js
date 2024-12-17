@@ -163,3 +163,7 @@ function showTable(index) {
     tables.forEach((table, i) => table.classList.toggle("active", i === index));
     tabs.forEach((tab, i) => tab.classList.toggle("active", i === index));
 }
+
+// Add a log to confirm the function is loaded
+console.log("showTable function is loaded successfully.");
+
