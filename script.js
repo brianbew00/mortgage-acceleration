@@ -173,7 +173,7 @@ function calculateWithHELOC(
     rate,                  // Monthly mortgage interest rate
     payment,               // Fixed monthly mortgage payment
     helocRate,             // Monthly HELOC interest rate
-    surplus,               // Surplus income for HELOC payment
+    surplusIncome,         // Surplus income for HELOC payment
     initialLumpSum,        // Maximum HELOC lump sum
     averageDailyOffset,    // Average daily offset input
     annualBalancesHELOC,   // Combined balances for chart
@@ -224,20 +224,20 @@ function calculateWithHELOC(
         // Update mortgage balance using the fixed mortgage payment
         balance = Math.max(balance + mortgageInterest - payment, 0);
 
-        // Step 2: HELOC advance logic
-        let lumpSumHELOC = 0;
-        const effectiveHELOCBalance = Math.max(helocBalance - averageDailyOffset, 0);
-        const interestHELOC = effectiveHELOCBalance * helocRate;
+        // Step 2: Check if a HELOC advance is needed
+        const effectiveHELOCBalanceForCheck = Math.max(helocBalance - averageDailyOffset, 0);
+        const interestHELOCForCheck = effectiveHELOCBalanceForCheck > 0 ? effectiveHELOCBalanceForCheck * helocRate : 0;
 
-        if (months === 0 || (helocBalance + interestHELOC - surplus < 0 && balance > 0)) {
-            lumpSumHELOC = Math.min(initialLumpSum, balance); // HELOC advance
+        let lumpSumHELOC = 0;
+        if (months === 0 || (helocBalance + interestHELOCForCheck - surplusIncome < 0 && balance > 0)) {
+            lumpSumHELOC = Math.min(initialLumpSum, balance);
             helocBalance += lumpSumHELOC;  // Increase HELOC balance
-            balance -= lumpSumHELOC;       // Decrease mortgage balance
+            balance -= lumpSumHELOC;       // Reduce mortgage balance
         }
 
         // Step 3: HELOC interest and payment
         const helocInterest = helocBalance * helocRate;
-        const helocPayment = Math.min(surplus, helocBalance + helocInterest);
+        const helocPayment = Math.min(surplusIncome, helocBalance + helocInterest);
         helocBalance = Math.max(helocBalance + helocInterest - helocPayment, 0);
 
         totalInterest += mortgageInterest + helocInterest;
