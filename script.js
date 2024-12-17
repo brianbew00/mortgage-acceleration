@@ -1,115 +1,174 @@
 let chartInstance;
 
 document.addEventListener("DOMContentLoaded", function () {
-    console.log("DOM fully loaded, starting calculations...");
-    try {
-        calculate(); // Run calculations after DOM is fully loaded
-    } catch (error) {
-        console.error("Error during initial calculation:", error);
-    }
+    console.log("DOM fully loaded, running calculations...");
+    calculate();
 });
 
 function calculate() {
-    console.log("Running calculations...");
-    try {
-        const tableData = generateTableData(50, 1000, 5000);
+    console.log("Calculating mortgage payment scenarios...");
 
-        console.log("Table data generated:", tableData);
-        renderTable("tableNoExtra", tableData);
+    // Input values
+    const mortgageBalance = parseFloat(document.getElementById('mortgageBalance').value);
+    const mortgageRate = parseFloat(document.getElementById('mortgageRate').value) / 100 / 12;
+    const mortgagePayment = parseFloat(document.getElementById('mortgagePayment').value);
+    const helocRate = parseFloat(document.getElementById('helocRate').value) / 100 / 12;
+    const netIncome = parseFloat(document.getElementById('netIncome').value);
+    const monthlyExpenses = parseFloat(document.getElementById('monthlyExpenses').value);
+    const surplusIncome = netIncome - monthlyExpenses;
+    const lumpSumMultiple = parseFloat(document.getElementById('lumpSumMultiple').value);
 
-        renderChart();
-    } catch (error) {
-        console.error("Error in calculate():", error);
-    }
+    // Scenario 1: No Extra Payments
+    const noExtraData = calculateMortgage(mortgageBalance, mortgageRate, mortgagePayment, 0);
+
+    // Scenario 2: Extra Monthly Principal Payments
+    const extraPaymentData = calculateMortgage(mortgageBalance, mortgageRate, mortgagePayment, surplusIncome);
+
+    // Scenario 3: Extra Payments with HELOC
+    const helocData = calculateHELOC(mortgageBalance, mortgageRate, mortgagePayment, helocRate, surplusIncome, lumpSumMultiple);
+
+    // Render tables
+    renderTable("tableNoExtra", noExtraData, "No Extra Payments");
+    renderTable("tableExtra", extraPaymentData, "Extra Monthly Payments");
+    renderTable("tableWithHELOC", helocData, "HELOC Payments");
+
+    // Render chart
+    renderChart([noExtraData, extraPaymentData, helocData]);
 }
 
-function renderTable(tableId, data) {
-    console.log(`Rendering table for ID: ${tableId}`);
+// Function to calculate standard mortgage amortization
+function calculateMortgage(balance, rate, payment, extraPrincipal) {
+    const tableData = [];
+    let month = 0;
+
+    while (balance > 0 && month < 360) { // 30 years max
+        const interest = balance * rate;
+        let principal = payment - interest + extraPrincipal;
+
+        if (balance - principal < 0) {
+            principal = balance;
+        }
+
+        balance -= principal;
+        month++;
+
+        tableData.push({ month, payment: payment + extraPrincipal, interest, principal, balance });
+    }
+
+    return tableData;
+}
+
+// Function to calculate mortgage with HELOC
+function calculateHELOC(balance, rate, payment, helocRate, surplus, lumpSumMultiple) {
+    const tableData = [];
+    let helocBalance = surplus * lumpSumMultiple;
+    let month = 0;
+
+    while ((balance > 0 || helocBalance > 0) && month < 360) {
+        const mortgageInterest = balance * rate;
+        let principal = payment - mortgageInterest;
+
+        if (balance > 0) {
+            balance -= principal;
+        }
+
+        const helocInterest = helocBalance * helocRate;
+        let helocPayment = surplus - helocInterest;
+
+        if (helocBalance > 0) {
+            helocBalance -= helocPayment;
+        }
+
+        month++;
+
+        tableData.push({
+            month,
+            payment: payment,
+            mortgageInterest: mortgageInterest,
+            principal: principal,
+            balance: balance,
+            helocBalance: helocBalance
+        });
+    }
+
+    return tableData;
+}
+
+// Function to render tables
+function renderTable(tableId, data, title) {
     let table = `
         <div class="table-wrapper">
             <table>
                 <tr>
                     <th>Month</th>
-                    <th>Value</th>
+                    <th>Payment ($)</th>
+                    <th>Interest ($)</th>
+                    <th>Principal ($)</th>
+                    <th>Remaining Balance ($)</th>
                 </tr>
     `;
 
-    for (let i = 0; i < data.length; i++) {
+    data.forEach(row => {
         table += `
             <tr>
-                <td>${i + 1}</td>
-                <td>${data[i]}</td>
+                <td>${row.month}</td>
+                <td>${row.payment.toFixed(2)}</td>
+                <td>${row.interest.toFixed(2)}</td>
+                <td>${row.principal.toFixed(2)}</td>
+                <td>${row.balance.toFixed(2)}</td>
             </tr>
         `;
-    }
+    });
 
     table += `</table></div>`;
-
-    const tableContainer = document.getElementById(tableId);
-    if (tableContainer) {
-        tableContainer.innerHTML = table;
-        console.log(`Table successfully rendered in #${tableId}`);
-    } else {
-        console.error(`Element with ID '${tableId}' not found.`);
-    }
+    document.getElementById(tableId).innerHTML = `<h3>${title}</h3>` + table;
 }
 
-function generateTableData(count, min, max) {
-    console.log(`Generating table data with ${count} rows.`);
-    return Array.from({ length: count }, () =>
-        Math.floor(Math.random() * (max - min) + min)
-    );
-}
+// Function to render the chart
+function renderChart(scenarios) {
+    const ctx = document.getElementById("comparisonChart").getContext("2d");
 
-function renderChart() {
-    console.log("Rendering chart...");
+    if (chartInstance) chartInstance.destroy();
 
-    const ctx = document.getElementById("comparisonChart");
-    if (!ctx) {
-        console.error("Chart container not found: #comparisonChart");
-        return;
-    }
+    const labels = scenarios[0].map(row => `Month ${row.month}`);
+    const datasets = [
+        {
+            label: "No Extra Payments",
+            data: scenarios[0].map(row => row.balance),
+            borderColor: "rgba(76, 175, 80, 1)",
+            backgroundColor: "rgba(76, 175, 80, 0.2)",
+            fill: true,
+        },
+        {
+            label: "Extra Monthly Payments",
+            data: scenarios[1].map(row => row.balance),
+            borderColor: "rgba(255, 87, 51, 1)",
+            backgroundColor: "rgba(255, 87, 51, 0.2)",
+            fill: true,
+        },
+        {
+            label: "Extra Payments with HELOC",
+            data: scenarios[2].map(row => row.balance),
+            borderColor: "rgba(58, 117, 196, 1)",
+            backgroundColor: "rgba(58, 117, 196, 0.2)",
+            fill: true,
+        },
+    ];
 
-    if (chartInstance) {
-        chartInstance.destroy();
-    }
-
-    try {
-        chartInstance = new Chart(ctx.getContext("2d"), {
-            type: "bar",
-            data: {
-                labels: ["Scenario 1", "Scenario 2", "Scenario 3"],
-                datasets: [
-                    {
-                        label: "Example Chart",
-                        data: [10, 20, 30],
-                        backgroundColor: ["#4CAF50", "#FF5733", "#3A75C4"],
-                    },
-                ],
+    chartInstance = new Chart(ctx, {
+        type: "line",
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: "Mortgage Balance Over Time (All Scenarios)"
+                }
             },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: true },
-                },
-            },
-        });
-        console.log("Chart rendered successfully.");
-    } catch (error) {
-        console.error("Error rendering chart:", error);
-    }
-}
-
-function showTable(index) {
-    console.log(`Switching to table ${index}`);
-    const tables = document.querySelectorAll(".table-container");
-    const tabs = document.querySelectorAll(".tab");
-
-    if (tables.length === 0 || tabs.length === 0) {
-        console.error("No table or tab elements found.");
-        return;
-    }
-
-    tables.forEach((table, i) => table.classList.toggle("active", i === index));
-    tabs.forEach((tab, i) => tab.classList.toggle("active", i === index));
+            scales: {
+                y: { beginAtZero: false, title: { display: true, text: "Balance ($)" } } 
+            }
+        }
+    });
 }
