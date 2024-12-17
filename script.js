@@ -11,6 +11,7 @@ function formatCurrency(value) {
     return `$${value.toFixed(2)}`;
 }
 
+// Main calculation function
 function calculate() {
     console.log("Calculating all scenarios...");
 
@@ -148,13 +149,17 @@ function calculateWithHELOC(balance, rate, payment, helocRate, surplus, lumpSum,
             <td>${formatCurrency(helocBalance)}</td>
             <td>${formatCurrency(balance)}</td>
         </tr>`;
-
-        if (months % 12 === 0 || (balance === 0 && helocBalance === 0)) {
-            annualBalances.heloc.push(balance + helocBalance);
-            annualInterest.heloc.push(totalInterest);
-        }
     }
 
     table += "</table></div>";
     document.getElementById("tableWithHELOC").innerHTML = table;
+}
+
+// Tab functionality
+function showTable(index) {
+    const tables = document.querySelectorAll(".table-container");
+    const tabs = document.querySelectorAll(".tab");
+
+    tables.forEach((table, i) => table.classList.toggle("active", i === index));
+    tabs.forEach((tab, i) => tab.classList.toggle("active", i === index));
 }
