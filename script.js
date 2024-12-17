@@ -171,7 +171,7 @@ function calculateExtraPrincipal(balance, rate, payment, surplus, annualBalances
 function calculateWithHELOC(
     balance,               // Mortgage balance
     rate,                  // Monthly mortgage interest rate
-    payment,               // Monthly mortgage payment
+    payment,               // Fixed monthly mortgage payment
     helocRate,             // Monthly HELOC interest rate
     surplus,               // Surplus income for HELOC payment
     initialLumpSum,        // Maximum HELOC lump sum
@@ -194,7 +194,6 @@ function calculateWithHELOC(
                     <th>Month</th>
                     <th>Mortgage Payment</th>
                     <th>Mortgage Interest</th>
-                    <th>Principal</th>
                     <th>HELOC Advance</th>
                     <th>HELOC Interest</th>
                     <th>HELOC Payment</th>
@@ -212,21 +211,20 @@ function calculateWithHELOC(
             <td></td>
             <td></td>
             <td></td>
-            <td></td>
             <td>${formatCurrency(helocBalance)}</td>
             <td>${formatCurrency(balance)}</td>
             <td>${formatCurrency(balance + helocBalance)}</td>
         </tr>`;
 
-    // Failsafe to prevent infinite loop
-    const maxMonths = 360; // 30 years max
+    const maxMonths = 360; // Failsafe: max 30 years
     while ((balance > 0 || helocBalance > 0) && months < maxMonths) {
-        // Step 1: Mortgage interest and principal payment
+        // Step 1: Calculate mortgage interest
         const mortgageInterest = balance * rate;
-        let principalPayment = Math.min(payment - mortgageInterest, balance);
-        if (principalPayment < 0 || isNaN(principalPayment)) principalPayment = 0;
 
-        // Step 2: Determine HELOC advance
+        // Update mortgage balance using the fixed mortgage payment
+        balance = Math.max(balance + mortgageInterest - payment, 0);
+
+        // Step 2: HELOC advance logic
         let lumpSumHELOC = 0;
         const effectiveHELOCBalance = Math.max(helocBalance - averageDailyOffset, 0);
         const interestHELOC = effectiveHELOCBalance * helocRate;
@@ -242,10 +240,7 @@ function calculateWithHELOC(
         const helocPayment = Math.min(surplus, helocBalance + helocInterest);
         helocBalance = Math.max(helocBalance + helocInterest - helocPayment, 0);
 
-        // Step 4: Update mortgage balance
-        balance = Math.max(balance + mortgageInterest - Payment, 0);
         totalInterest += mortgageInterest + helocInterest;
-
         months++;
 
         // Append row to table
@@ -254,7 +249,6 @@ function calculateWithHELOC(
                 <td>${months}</td>
                 <td>${formatCurrency(payment)}</td>
                 <td>${formatCurrency(mortgageInterest)}</td>
-                <td>${formatCurrency(principalPayment)}</td>
                 <td>${formatCurrency(lumpSumHELOC)}</td>
                 <td>${formatCurrency(helocInterest)}</td>
                 <td>${formatCurrency(helocPayment)}</td>
@@ -263,7 +257,7 @@ function calculateWithHELOC(
                 <td>${formatCurrency(balance + helocBalance)}</td>
             </tr>`;
 
-        // Step 5: Update annual data for charts
+        // Step 4: Update annual data for charts
         if (months % 12 === 0 || (balance === 0 && helocBalance === 0)) {
             annualBalancesHELOC.push(balance + helocBalance);
             annualInterestHELOC.push(totalInterest);
