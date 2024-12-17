@@ -243,7 +243,7 @@ function calculateWithHELOC(
         helocBalance = Math.max(helocBalance + helocInterest - helocPayment, 0);
 
         // Step 4: Update mortgage balance
-        balance = Math.max(balance + mortgageInterest - principalPayment, 0);
+        balance = Math.max(balance + mortgageInterest - Payment, 0);
         totalInterest += mortgageInterest + helocInterest;
 
         months++;
