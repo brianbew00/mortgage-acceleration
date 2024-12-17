@@ -6,8 +6,13 @@ document.addEventListener("DOMContentLoaded", function () {
     showTable(0); // Default to the first table
 });
 
+// Function to format currency
+function formatCurrency(value) {
+    return `$${value.toFixed(2)}`;
+}
+
 function calculate() {
-    console.log("Calculating mortgage payment scenarios...");
+    console.log("Calculating all scenarios...");
 
     // Input values
     const mortgageBalance = parseFloat(document.getElementById('mortgageBalance').value);
@@ -17,200 +22,139 @@ function calculate() {
     const netIncome = parseFloat(document.getElementById('netIncome').value);
     const monthlyExpenses = parseFloat(document.getElementById('monthlyExpenses').value);
     const surplusIncome = netIncome - monthlyExpenses;
-    const lumpSumMultiple = parseFloat(document.getElementById('lumpSumMultiple').value);
+    const averageDailyOffset = 0; // Placeholder
+    const initialLumpSum = surplusIncome * 4; // Lump sum multiple placeholder
+
+    const annualBalances = { noExtra: [], extraPrincipal: [], heloc: [] };
+    const annualInterest = { noExtra: [], extraPrincipal: [], heloc: [] };
 
     // Scenario 1: No Extra Payments
-    const noExtraData = calculateMortgage(mortgageBalance, mortgageRate, mortgagePayment, 0);
+    calculateNoExtra(mortgageBalance, mortgageRate, mortgagePayment, annualBalances, annualInterest);
 
-    // Scenario 2: Extra Monthly Principal Payments
-    const extraPaymentData = calculateMortgage(mortgageBalance, mortgageRate, mortgagePayment, surplusIncome);
+    // Scenario 2: Extra Monthly Payments
+    calculateExtraPrincipal(mortgageBalance, mortgageRate, mortgagePayment, surplusIncome, annualBalances, annualInterest);
 
     // Scenario 3: Extra Payments with HELOC
-    const helocData = calculateHELOC(mortgageBalance, mortgageRate, mortgagePayment, helocRate, surplusIncome, lumpSumMultiple);
-
-    // Render tables
-    renderTable("tableNoExtra", noExtraData, "No Extra Payments");
-    renderTable("tableExtra", extraPaymentData, "Extra Monthly Principal Payments");
-    renderTable("tableWithHELOC", helocData, "Extra Payments with HELOC");
-
-    // Render chart
-    renderChart([noExtraData, extraPaymentData, helocData]);
+    calculateWithHELOC(
+        mortgageBalance, mortgageRate, mortgagePayment, helocRate,
+        surplusIncome, initialLumpSum, averageDailyOffset,
+        annualBalances, annualInterest
+    );
 }
 
-// Function to calculate mortgage with optional extra payments
-function calculateMortgage(balance, rate, payment, extraPrincipal) {
-    const tableData = [];
-    let month = 0;
+// Scenario 1: No Extra Payments
+function calculateNoExtra(balance, rate, payment, annualBalances, annualInterest) {
+    let totalInterest = 0;
+    let months = 0;
+    let table = "<div class='table-wrapper'><table><tr><th>Month</th><th>Payment</th><th>Interest</th><th>Principal</th><th>Balance</th></tr>";
 
-    while (balance > 0 && month < 360) { // 30 years max
+    while (balance > 0) {
         const interest = balance * rate;
-        let principal = payment - interest + extraPrincipal;
+        const principal = Math.min(payment - interest, balance);
+        balance = Math.max(balance - principal, 0);
+        totalInterest += interest;
+        months++;
 
-        if (balance - principal < 0) {
-            principal = balance;
+        table += `<tr>
+            <td>${months}</td>
+            <td>${formatCurrency(payment)}</td>
+            <td>${formatCurrency(interest)}</td>
+            <td>${formatCurrency(principal)}</td>
+            <td>${formatCurrency(balance)}</td>
+        </tr>`;
+
+        if (months % 12 === 0 || balance === 0) {
+            annualBalances.noExtra.push(balance);
+            annualInterest.noExtra.push(totalInterest);
         }
-
-        balance -= principal;
-        month++;
-
-        tableData.push({ month, payment: payment + extraPrincipal, interest, principal, balance });
     }
 
-    return tableData;
+    table += "</table></div>";
+    document.getElementById("tableNoExtra").innerHTML = table;
 }
 
-// Function to calculate mortgage with HELOC
-function calculateHELOC(balance, rate, payment, helocRate, surplus, lumpSumMultiple) {
-    console.log("Calculating HELOC payments...");
-    const tableData = [];
-    let helocBalance = surplus * lumpSumMultiple; // Initial HELOC advance
-    let month = 0;
+// Scenario 2: Extra Monthly Principal Payments
+function calculateExtraPrincipal(balance, rate, payment, surplus, annualBalances, annualInterest) {
+    let totalInterest = 0;
+    let months = 0;
+    let table = "<div class='table-wrapper'><table><tr><th>Month</th><th>Payment</th><th>Interest</th><th>Principal</th><th>Extra Principal</th><th>Balance</th></tr>";
 
-    while ((balance > 0 || helocBalance > 0) && month < 360) { // Max 30 years
+    while (balance > 0) {
+        const interest = balance * rate;
+        let extraPrincipal = surplus;
+        let principal = Math.min(payment - interest, balance);
+        let totalPayment = principal + interest + extraPrincipal;
+
+        if (totalPayment > balance + interest) {
+            extraPrincipal = balance + interest - payment;
+            totalPayment = payment + extraPrincipal;
+        }
+
+        balance = Math.max(balance - principal - extraPrincipal, 0);
+        totalInterest += interest;
+        months++;
+
+        table += `<tr>
+            <td>${months}</td>
+            <td>${formatCurrency(totalPayment)}</td>
+            <td>${formatCurrency(interest)}</td>
+            <td>${formatCurrency(principal)}</td>
+            <td>${formatCurrency(extraPrincipal)}</td>
+            <td>${formatCurrency(balance)}</td>
+        </tr>`;
+
+        if (months % 12 === 0 || balance === 0) {
+            annualBalances.extraPrincipal.push(balance);
+            annualInterest.extraPrincipal.push(totalInterest);
+        }
+    }
+
+    table += "</table></div>";
+    document.getElementById("tableExtra").innerHTML = table;
+}
+
+// Scenario 3: Extra Payments with HELOC
+function calculateWithHELOC(balance, rate, payment, helocRate, surplus, lumpSum, averageDailyOffset, annualBalances, annualInterest) {
+    let helocBalance = 0;
+    let totalInterest = 0;
+    let months = 0;
+
+    let table = "<div class='table-wrapper'><table><tr><th>Month</th><th>Mortgage Payment</th><th>Mortgage Interest</th><th>Principal</th><th>Lump Sum</th><th>HELOC Interest</th><th>HELOC Payment</th><th>HELOC Balance</th><th>Mortgage Balance</th></tr>";
+
+    while (balance > 0 || helocBalance > 0) {
         const mortgageInterest = balance * rate;
-        let principal = payment - mortgageInterest;
+        let principal = Math.min(payment - mortgageInterest, balance);
+        let lumpSumHELOC = months === 1 ? lumpSum : 0;
 
-        // Prevent overpayment
-        if (balance - principal < 0) {
-            principal = balance;
-        }
+        helocBalance += lumpSumHELOC;
+        balance -= lumpSumHELOC;
+        balance = Math.max(balance - principal, 0);
 
-        // Update mortgage balance
-        if (balance > 0) {
-            balance -= principal;
-        }
-
-        // HELOC repayment
         const helocInterest = helocBalance * helocRate;
         let helocPayment = surplus - helocInterest;
+        helocBalance = Math.max(helocBalance + helocInterest - helocPayment, 0);
 
-        if (helocPayment > 0) {
-            if (helocBalance - helocPayment < 0) {
-                helocPayment = helocBalance;
-            }
-            helocBalance -= helocPayment;
+        totalInterest += mortgageInterest + helocInterest;
+        months++;
+
+        table += `<tr>
+            <td>${months}</td>
+            <td>${formatCurrency(payment)}</td>
+            <td>${formatCurrency(mortgageInterest)}</td>
+            <td>${formatCurrency(principal)}</td>
+            <td>${formatCurrency(lumpSumHELOC)}</td>
+            <td>${formatCurrency(helocInterest)}</td>
+            <td>${formatCurrency(helocPayment)}</td>
+            <td>${formatCurrency(helocBalance)}</td>
+            <td>${formatCurrency(balance)}</td>
+        </tr>`;
+
+        if (months % 12 === 0 || (balance === 0 && helocBalance === 0)) {
+            annualBalances.heloc.push(balance + helocBalance);
+            annualInterest.heloc.push(totalInterest);
         }
-
-        month++;
-
-        tableData.push({
-            month,
-            payment: payment.toFixed(2),
-            mortgageInterest: mortgageInterest.toFixed(2),
-            principal: principal.toFixed(2),
-            remainingBalance: balance.toFixed(2),
-            helocBalance: helocBalance.toFixed(2),
-        });
     }
 
-    console.log("HELOC calculation complete:", tableData);
-    return tableData;
-}
-
-// Function to render tables
-function renderTable(tableId, data, title) {
-    console.log(`Rendering table for ${title}...`);
-
-    let table = `
-        <div class="table-wrapper">
-            <table>
-                <tr>
-                    <th>Month</th>
-                    <th>Payment ($)</th>
-                    <th>Interest ($)</th>
-                    <th>Principal ($)</th>
-                    <th>Remaining Balance ($)</th>
-                    ${tableId === "tableWithHELOC" ? "<th>HELOC Balance ($)</th>" : ""}
-                </tr>
-    `;
-
-    data.forEach(row => {
-        table += `
-            <tr>
-                <td>${row.month}</td>
-                <td>${row.payment}</td>
-                <td>${row.mortgageInterest || row.interest}</td>
-                <td>${row.principal}</td>
-                <td>${row.remainingBalance}</td>
-                ${row.helocBalance !== undefined ? `<td>${row.helocBalance}</td>` : ""}
-            </tr>
-        `;
-    });
-
-    table += `</table></div>`;
-    document.getElementById(tableId).innerHTML = `<h3>${title}</h3>` + table;
-    console.log(`${title} table rendered successfully.`);
-}
-
-// Function to render chart
-function renderChart(scenarios) {
-    const ctx = document.getElementById("comparisonChart").getContext("2d");
-
-    if (chartInstance) chartInstance.destroy();
-
-    const labels = scenarios[0].map(row => `Month ${row.month}`);
-    const datasets = [
-        {
-            label: "No Extra Payments",
-            data: scenarios[0].map(row => row.balance),
-            borderColor: "rgba(76, 175, 80, 1)",
-            backgroundColor: "rgba(76, 175, 80, 0.2)",
-            fill: true,
-        },
-        {
-            label: "Extra Monthly Payments",
-            data: scenarios[1].map(row => row.balance),
-            borderColor: "rgba(255, 87, 51, 1)",
-            backgroundColor: "rgba(255, 87, 51, 0.2)",
-            fill: true,
-        },
-        {
-            label: "Extra Payments with HELOC",
-            data: scenarios[2].map(row => row.balance),
-            borderColor: "rgba(58, 117, 196, 1)",
-            backgroundColor: "rgba(58, 117, 196, 0.2)",
-            fill: true,
-        },
-    ];
-
-    chartInstance = new Chart(ctx, {
-        type: "line",
-        data: { labels, datasets },
-        options: {
-            responsive: true,
-            plugins: {
-                title: {
-                    display: true,
-                    text: "Mortgage Balance Over Time"
-                }
-            },
-            scales: {
-                y: { beginAtZero: false, title: { display: true, text: "Balance ($)" } }
-            }
-        }
-    });
-}
-
-// Function to toggle tables
-function showTable(index) {
-    const tables = document.querySelectorAll(".table-container");
-    const tabs = document.querySelectorAll(".tab");
-
-    // Loop through tables and hide/show based on index
-    tables.forEach((table, i) => {
-        if (i === index) {
-            table.classList.add("active");
-        } else {
-            table.classList.remove("active");
-        }
-    });
-
-    // Loop through tabs and toggle active class
-    tabs.forEach((tab, i) => {
-        if (i === index) {
-            tab.classList.add("active");
-        } else {
-            tab.classList.remove("active");
-        }
-    });
+    table += "</table></div>";
+    document.getElementById("tableWithHELOC").innerHTML = table;
 }
