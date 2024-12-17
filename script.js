@@ -218,30 +218,32 @@ function calculateWithHELOC(
             <td>${formatCurrency(balance + helocBalance)}</td>
         </tr>`;
 
-    while (balance > 0 || helocBalance > 0) {
-        // Step 1: Calculate mortgage interest and principal
+    // Failsafe to prevent infinite loop
+    const maxMonths = 360; // 30 years max
+    while ((balance > 0 || helocBalance > 0) && months < maxMonths) {
+        // Step 1: Mortgage interest and principal payment
         const mortgageInterest = balance * rate;
         let principalPayment = Math.min(payment - mortgageInterest, balance);
+        if (principalPayment < 0 || isNaN(principalPayment)) principalPayment = 0;
 
         // Step 2: Determine HELOC advance
         let lumpSumHELOC = 0;
         const effectiveHELOCBalance = Math.max(helocBalance - averageDailyOffset, 0);
         const interestHELOC = effectiveHELOCBalance * helocRate;
 
-        // Check if a HELOC advance is needed
         if (months === 0 || (helocBalance + interestHELOC - surplus < 0 && balance > 0)) {
-            lumpSumHELOC = Math.min(initialLumpSum, balance); // HELOC advance capped by mortgage balance
+            lumpSumHELOC = Math.min(initialLumpSum, balance); // HELOC advance
             helocBalance += lumpSumHELOC;  // Increase HELOC balance
             balance -= lumpSumHELOC;       // Decrease mortgage balance
         }
 
         // Step 3: HELOC interest and payment
         const helocInterest = helocBalance * helocRate;
-        const helocPayment = Math.min(surplus, helocBalance + helocInterest); // HELOC payment capped to balance + interest
+        const helocPayment = Math.min(surplus, helocBalance + helocInterest);
         helocBalance = Math.max(helocBalance + helocInterest - helocPayment, 0);
 
         // Step 4: Update mortgage balance
-        balance = Math.max(balance + mortgageInterest - principalPayment, 0); // Mortgage balance reduced by principal payment
+        balance = Math.max(balance + mortgageInterest - principalPayment, 0);
         totalInterest += mortgageInterest + helocInterest;
 
         months++;
@@ -268,7 +270,10 @@ function calculateWithHELOC(
         }
     }
 
+    // Close the table
     table += "</table></div>";
+
+    // Insert table into the DOM
     document.getElementById("tableWithHELOC").innerHTML = table;
 }
 
