@@ -61,22 +61,33 @@ function calculateMortgage(balance, rate, payment, extraPrincipal) {
 
 // Function to calculate mortgage with HELOC
 function calculateHELOC(balance, rate, payment, helocRate, surplus, lumpSumMultiple) {
+    console.log("Calculating HELOC payments...");
     const tableData = [];
-    let helocBalance = surplus * lumpSumMultiple;
+    let helocBalance = surplus * lumpSumMultiple; // Initial HELOC advance
     let month = 0;
 
-    while ((balance > 0 || helocBalance > 0) && month < 360) {
+    while ((balance > 0 || helocBalance > 0) && month < 360) { // Max 30 years
         const mortgageInterest = balance * rate;
         let principal = payment - mortgageInterest;
 
+        // Prevent overpayment
+        if (balance - principal < 0) {
+            principal = balance;
+        }
+
+        // Update mortgage balance
         if (balance > 0) {
             balance -= principal;
         }
 
+        // HELOC repayment
         const helocInterest = helocBalance * helocRate;
         let helocPayment = surplus - helocInterest;
 
-        if (helocBalance > 0) {
+        if (helocPayment > 0) {
+            if (helocBalance - helocPayment < 0) {
+                helocPayment = helocBalance;
+            }
             helocBalance -= helocPayment;
         }
 
@@ -84,19 +95,22 @@ function calculateHELOC(balance, rate, payment, helocRate, surplus, lumpSumMulti
 
         tableData.push({
             month,
-            payment: payment,
-            mortgageInterest: mortgageInterest,
-            principal: principal,
-            balance: balance,
-            helocBalance: helocBalance
+            payment: payment.toFixed(2),
+            mortgageInterest: mortgageInterest.toFixed(2),
+            principal: principal.toFixed(2),
+            remainingBalance: balance.toFixed(2),
+            helocBalance: helocBalance.toFixed(2),
         });
     }
 
+    console.log("HELOC calculation complete:", tableData);
     return tableData;
 }
 
 // Function to render tables
 function renderTable(tableId, data, title) {
+    console.log(`Rendering table for ${title}...`);
+
     let table = `
         <div class="table-wrapper">
             <table>
@@ -106,6 +120,7 @@ function renderTable(tableId, data, title) {
                     <th>Interest ($)</th>
                     <th>Principal ($)</th>
                     <th>Remaining Balance ($)</th>
+                    ${tableId === "tableWithHELOC" ? "<th>HELOC Balance ($)</th>" : ""}
                 </tr>
     `;
 
@@ -113,16 +128,18 @@ function renderTable(tableId, data, title) {
         table += `
             <tr>
                 <td>${row.month}</td>
-                <td>${row.payment.toFixed(2)}</td>
-                <td>${row.interest.toFixed(2)}</td>
-                <td>${row.principal.toFixed(2)}</td>
-                <td>${row.balance.toFixed(2)}</td>
+                <td>${row.payment}</td>
+                <td>${row.mortgageInterest || row.interest}</td>
+                <td>${row.principal}</td>
+                <td>${row.remainingBalance}</td>
+                ${row.helocBalance !== undefined ? `<td>${row.helocBalance}</td>` : ""}
             </tr>
         `;
     });
 
     table += `</table></div>`;
     document.getElementById(tableId).innerHTML = `<h3>${title}</h3>` + table;
+    console.log(`${title} table rendered successfully.`);
 }
 
 // Function to render chart
