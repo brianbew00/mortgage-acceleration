@@ -179,6 +179,21 @@ function showTable(index) {
     const tables = document.querySelectorAll(".table-container");
     const tabs = document.querySelectorAll(".tab");
 
-    tables.forEach((table, i) => table.classList.toggle("active", i === index));
-    tabs.forEach((tab, i) => tab.classList.toggle("active", i === index));
+    // Loop through tables and hide/show based on index
+    tables.forEach((table, i) => {
+        if (i === index) {
+            table.classList.add("active");
+        } else {
+            table.classList.remove("active");
+        }
+    });
+
+    // Loop through tabs and toggle active class
+    tabs.forEach((tab, i) => {
+        if (i === index) {
+            tab.classList.add("active");
+        } else {
+            tab.classList.remove("active");
+        }
+    });
 }
