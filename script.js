@@ -253,7 +253,7 @@ function calculateWithHELOC(
     let totalInterest = 0;  // Total interest (mortgage + HELOC)
     let months = 0;
 
-    // Add initial row for charts and table
+    // Add initial row for charts
     annualBalancesHELOC.push(balance);
     annualInterestHELOC.push(0);
 
@@ -291,21 +291,21 @@ function calculateWithHELOC(
         // Step 1: Calculate mortgage interest
         const mortgageInterest = balance * rate;
 
-        // Adjust mortgage payment if it exceeds remaining balance + interest
+        // Adjust mortgage payment if it exceeds balance + interest
         let adjustedPayment = Math.min(payment, balance + mortgageInterest);
 
-        // Update mortgage balance using the adjusted mortgage payment
+        // Update mortgage balance
         balance = Math.max(balance + mortgageInterest - adjustedPayment, 0);
 
-        // Step 2: Check if a HELOC advance is needed
-        const effectiveHELOCBalanceForCheck = Math.max(helocBalance - averageDailyOffset, 0);
-        const interestHELOCForCheck = effectiveHELOCBalanceForCheck > 0 ? effectiveHELOCBalanceForCheck * helocRate : 0;
-
+        // Step 2: Determine HELOC advance
         let lumpSumHELOC = 0;
+        const effectiveHELOCBalanceForCheck = Math.max(helocBalance - averageDailyOffset, 0);
+        const interestHELOCForCheck = effectiveHELOCBalanceForCheck * helocRate;
+
         if (months === 0 || (helocBalance + interestHELOCForCheck - surplusIncome < 0 && balance > 0)) {
             lumpSumHELOC = Math.min(initialLumpSum, balance);
             helocBalance += lumpSumHELOC;  // Increase HELOC balance
-            balance -= lumpSumHELOC;       // Reduce mortgage balance
+            balance -= lumpSumHELOC;       // Decrease mortgage balance
         }
 
         // Step 3: Calculate HELOC interest and payment
@@ -340,7 +340,7 @@ function calculateWithHELOC(
         }
     }
 
-    // Store the total interest for this scenario
+    // Store total interest for this scenario
     totalInterestScenario3 = totalInterest;
 
     // Close the table
