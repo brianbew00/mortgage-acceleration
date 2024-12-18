@@ -150,7 +150,7 @@ function calculateExtraPrincipal(balance, rate, payment, surplus, annualBalances
         table += `
             <tr>
                 <td>${months}</td>
-                <td>${formatCurrency(payment + extraPrincipal)}</td>
+                <td>${formatCurrency(payment)}</td>
                 <td>${formatCurrency(interest)}</td>
                 <td>${formatCurrency(principal)}</td>
                 <td>${formatCurrency(extraPrincipal)}</td>
