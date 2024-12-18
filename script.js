@@ -140,6 +140,9 @@ function calculateNoExtra(
         }
     }
 
+    // Store the total interest for this scenario
+    totalInterestScenario1 = totalInterest;
+
     // Close the table
     table += "</table></div>";
 
@@ -223,6 +226,9 @@ function calculateExtraPrincipal(
             annualInterestExtra.push(totalInterest);
         }
     }
+
+    // Store the total interest for this scenario
+    totalInterestScenario2 = totalInterest;
 
     // Close the table
     table += "</table></div>";
@@ -331,6 +337,9 @@ function calculateWithHELOC(
         }
     }
 
+    // Store the total interest for this scenario
+    totalInterestScenario3 = totalInterest;
+
     // Close the table
     table += "</table></div>";
 
@@ -343,7 +352,6 @@ function updateChart() {
     const chartType = document.getElementById("chartType").value;
     const ctx = document.getElementById("comparisonChart").getContext("2d");
 
-    // Initialize labels and datasets
     let labels = [];
     let datasets = [];
 
@@ -356,16 +364,12 @@ function updateChart() {
             { label: "Extra Payments with HELOC", data: annualBalances.heloc, borderColor: "red", borderWidth: 2, fill: false },
         ];
     } else if (chartType === "cumulativeInterest") {
-        // Cumulative Interest Totals Bar Chart
+        // Use precomputed total interest values
         labels = ["No Extra Payments", "Extra Principal Payments", "Extra Payments with HELOC"];
         datasets = [
             {
                 label: "Total Cumulative Interest",
-                data: [
-                    annualInterest.noExtra.reduce((a, b) => a + b, 0), // Sum of all annual interest values for Scenario 1
-                    annualInterest.extraPrincipal.reduce((a, b) => a + b, 0), // Scenario 2
-                    annualInterest.heloc.reduce((a, b) => a + b, 0), // Scenario 3
-                ],
+                data: [totalInterestScenario1, totalInterestScenario2, totalInterestScenario3],
                 backgroundColor: ["blue", "green", "red"],
             },
         ];
