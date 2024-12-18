@@ -239,16 +239,11 @@ function calculateWithHELOC(
     payment,               // Fixed monthly mortgage payment
     helocRate,             // Monthly HELOC interest rate
     surplusIncome,         // Surplus income for HELOC payment
+    initialLumpSum,        // Maximum HELOC lump sum
+    averageDailyOffset,    // Average daily offset input
     annualBalancesHELOC,   // Combined balances for chart
     annualInterestHELOC    // Combined interest for chart
 ) {
-    // Parse the lumpSumMultiple and averageDailyOffset input fields
-    const averageDailyOffset = parseFloat(document.getElementById('averageDailyOffset').value) || 0;
-    const lumpSumMultiple = parseFloat(document.getElementById('lumpSumMultiple').value) || 0;
-
-    // Calculate the initial lump sum based on the input multiple
-    const initialLumpSum = surplusIncome * lumpSumMultiple;
-
     let helocBalance = 0;   // Initialize HELOC balance
     let totalInterest = 0;  // Total interest (mortgage + HELOC)
     let months = 0;
