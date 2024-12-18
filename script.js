@@ -117,7 +117,7 @@ function calculateNoExtra(balance, rate, payment, annualBalancesNoExtra, annualI
     document.getElementById("tableNoExtra").innerHTML = table;
 }
 
-//Scenario 2
+// Scenario 2: Extra Monthly Principal Payments
 function calculateExtraPrincipal(balance, rate, payment, surplus, annualBalancesExtra, annualInterestExtra) {
     let totalInterest = 0;
     let months = 0;
@@ -221,8 +221,11 @@ function calculateWithHELOC(
         // Step 1: Calculate mortgage interest
         const mortgageInterest = balance * rate;
 
-        // Update mortgage balance using the fixed mortgage payment
-        balance = Math.max(balance + mortgageInterest - payment, 0);
+        // Adjust mortgage payment if it exceeds remaining balance + interest
+        let adjustedPayment = Math.min(payment, balance + mortgageInterest);
+
+        // Update mortgage balance using the adjusted mortgage payment
+        balance = Math.max(balance + mortgageInterest - adjustedPayment, 0);
 
         // Step 2: Check if a HELOC advance is needed
         const effectiveHELOCBalanceForCheck = Math.max(helocBalance - averageDailyOffset, 0);
