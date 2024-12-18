@@ -31,8 +31,7 @@ function calculate() {
     const netIncome = parseFloat(document.getElementById('netIncome').value);
     const monthlyExpenses = parseFloat(document.getElementById('monthlyExpenses').value);
     const surplusIncome = netIncome - monthlyExpenses;
-    const initialLumpSum = surplusIncome * lumpSumMultiple;
-    const averageDailyOffset = parseFloat(document.getElementById("averageDailyOffset").value) || 0;
+    const initialLumpSum = surplusIncome * 4;
 
 // Scenario 1: No Extra Payments
 calculateNoExtra(
@@ -141,9 +140,6 @@ function calculateNoExtra(
         }
     }
 
-    // Store the total interest for this scenario
-    totalInterestScenario1 = totalInterest;
-
     // Close the table
     table += "</table></div>";
 
@@ -227,9 +223,6 @@ function calculateExtraPrincipal(
             annualInterestExtra.push(totalInterest);
         }
     }
-
-    // Store the total interest for this scenario
-    totalInterestScenario2 = totalInterest;
 
     // Close the table
     table += "</table></div>";
@@ -338,9 +331,6 @@ function calculateWithHELOC(
         }
     }
 
-    // Store the total interest for this scenario
-    totalInterestScenario3 = totalInterest;
-
     // Close the table
     table += "</table></div>";
 
@@ -353,26 +343,21 @@ function updateChart() {
     const chartType = document.getElementById("chartType").value;
     const ctx = document.getElementById("comparisonChart").getContext("2d");
 
-    let labels = [];
+    // Define labels for years
+    let labels = Array.from({ length: Math.max(annualBalances.noExtra.length) }, (_, i) => `Year ${i + 1}`);
     let datasets = [];
 
     if (chartType === "balance") {
-        // Mortgage Balance Line Chart
-        labels = Array.from({ length: Math.max(annualBalances.noExtra.length) }, (_, i) => `Year ${i + 1}`);
         datasets = [
             { label: "No Extra Payments", data: annualBalances.noExtra, borderColor: "blue", borderWidth: 2, fill: false },
             { label: "Extra Principal Payments", data: annualBalances.extraPrincipal, borderColor: "green", borderWidth: 2, fill: false },
             { label: "Extra Payments with HELOC", data: annualBalances.heloc, borderColor: "red", borderWidth: 2, fill: false },
         ];
-    } else if (chartType === "cumulativeInterest") {
-        // Use precomputed total interest values
-        labels = ["No Extra Payments", "Extra Principal Payments", "Extra Payments with HELOC"];
+    } else if (chartType === "interest") {
         datasets = [
-            {
-                label: "Total Cumulative Interest",
-                data: [totalInterestScenario1, totalInterestScenario2, totalInterestScenario3],
-                backgroundColor: ["blue", "green", "red"],
-            },
+            { label: "No Extra Payments", data: annualInterest.noExtra, borderColor: "blue", borderWidth: 2, fill: false },
+            { label: "Extra Principal Payments", data: annualInterest.extraPrincipal, borderColor: "green", borderWidth: 2, fill: false },
+            { label: "Extra Payments with HELOC", data: annualInterest.heloc, borderColor: "red", borderWidth: 2, fill: false },
         ];
     }
 
@@ -383,7 +368,7 @@ function updateChart() {
 
     // Create a new chart
     chartInstance = new Chart(ctx, {
-        type: chartType === "cumulativeInterest" ? "bar" : "line", // Use bar for cumulative interest
+        type: "line",
         data: { labels: labels, datasets: datasets },
         options: {
             responsive: true,
@@ -391,26 +376,12 @@ function updateChart() {
                 legend: { display: true, position: "top" },
             },
             scales: {
-                x: { title: { display: true, text: chartType === "cumulativeInterest" ? "Scenario" : "Years" } },
-                y: { title: { display: true, text: chartType === "balance" ? "Balance ($)" : "Cumulative Interest ($)" } },
+                x: { title: { display: true, text: "Years" } },
+                y: { title: { display: true, text: chartType === "balance" ? "Balance ($)" : "Interest Expense ($)" } },
             },
         },
     });
 }
-
-// Initialize dropdown and default chart on page load
-document.addEventListener("DOMContentLoaded", function () {
-    const chartDropdown = document.getElementById("chartType");
-
-    // Update dropdown options
-    chartDropdown.innerHTML = `
-        <option value="cumulativeInterest">Cumulative Interest Totals</option>
-        <option value="balance">Mortgage Balance</option>
-    `;
-
-    // Render default chart (Cumulative Interest Totals)
-    updateChart();
-});
 
 // Tab functionality
 window.showTable = function (index) {
