@@ -244,6 +244,9 @@ function calculateWithHELOC(
     annualBalancesHELOC,   // Combined balances for chart
     annualInterestHELOC    // Combined interest for chart
 ) {
+    const lumpSumMultiple = parseFloat(document.getElementById('lumpSumMultiple').value) || 0;
+    const initialLumpSum = surplusIncome * lumpSumMultiple;
+
     let helocBalance = 0;   // Initialize HELOC balance
     let totalInterest = 0;  // Total interest (mortgage + HELOC)
     let months = 0;
