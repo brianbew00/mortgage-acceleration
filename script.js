@@ -92,8 +92,9 @@ function calculateNoExtra(balance, rate, payment, annualBalancesNoExtra, annualI
         </tr>`;
 
     while (balance > 0) {
-        const interest = balance * rate;
-        const principal = Math.min(payment - interest, balance);
+        const interest = balance * mortgageRate; // Calculate interest for the month
+        let principal = mortgagePayment - interest; // Calculate principal part of the payment
+        let payment = mortgagePayment; // Default to full mortgage payment
 
         // Adjust payment if it exceeds balance + interest
         if (payment > balance + interest) {
