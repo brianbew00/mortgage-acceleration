@@ -338,6 +338,9 @@ function calculateWithHELOC(
         }
     }
 
+    // Store the total interest for this scenario
+    totalInterestScenario3 = totalInterest;
+
     // Close the table
     table += "</table></div>";
 
