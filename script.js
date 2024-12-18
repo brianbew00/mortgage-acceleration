@@ -31,7 +31,8 @@ function calculate() {
     const netIncome = parseFloat(document.getElementById('netIncome').value);
     const monthlyExpenses = parseFloat(document.getElementById('monthlyExpenses').value);
     const surplusIncome = netIncome - monthlyExpenses;
-    const initialLumpSum = surplusIncome * 4;
+    const initialLumpSum = surplusIncome * lumpSumMultiple;
+    const averageDailyOffset = parseFloat(document.getElementById("averageDailyOffset").value) || 0;
 
 // Scenario 1: No Extra Payments
 calculateNoExtra(
