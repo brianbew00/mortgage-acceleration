@@ -11,9 +11,8 @@ document.addEventListener("DOMContentLoaded", function () {
 let annualBalances = { noExtra: [], extraPrincipal: [], heloc: [] };
 let annualInterest = { noExtra: [], extraPrincipal: [], heloc: [] };
 
-// Function to format currency
 function formatCurrency(value) {
-    return `$${value.toFixed(2)}`;
+    return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function calculate() {
