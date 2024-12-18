@@ -308,9 +308,12 @@ function calculateWithHELOC(
             balance -= lumpSumHELOC;       // Reduce mortgage balance
         }
 
-        // Step 3: HELOC interest and payment
-        const helocInterest = helocBalance * helocRate;
+        // Step 3: Calculate HELOC interest and payment
+        const effectiveHELOCBalance = Math.max(helocBalance - averageDailyOffset, 0); // Apply offset
+        const helocInterest = effectiveHELOCBalance * helocRate;
         const helocPayment = Math.min(surplusIncome, helocBalance + helocInterest);
+
+        // Update HELOC balance
         helocBalance = Math.max(helocBalance + helocInterest - helocPayment, 0);
 
         totalInterest += mortgageInterest + helocInterest;
