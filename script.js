@@ -70,7 +70,7 @@ calculateWithHELOC(
     updateChart();
 }
 
-//Scenario 1
+// Scenario 1: No Extra Payments
 function calculateNoExtra(balance, rate, payment, annualBalancesNoExtra, annualInterestNoExtra) {
     let totalInterest = 0;
     let months = 0;
@@ -94,6 +94,13 @@ function calculateNoExtra(balance, rate, payment, annualBalancesNoExtra, annualI
     while (balance > 0) {
         const interest = balance * rate;
         const principal = Math.min(payment - interest, balance);
+
+        // Adjust payment if it exceeds balance + interest
+        if (payment > balance + interest) {
+        payment = balance + interest;
+        principal = payment - interest;
+        }
+
         balance = Math.max(balance - principal, 0);
         totalInterest += interest;
         months++;
