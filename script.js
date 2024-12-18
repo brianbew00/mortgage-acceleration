@@ -250,7 +250,7 @@ function calculateWithHELOC(
         table += `
             <tr>
                 <td>${months}</td>
-                <td>${formatCurrency(payment)}</td>
+                <td>${formatCurrency(adjustedPayment)}</td>
                 <td>${formatCurrency(mortgageInterest)}</td>
                 <td>${formatCurrency(lumpSumHELOC)}</td>
                 <td>${formatCurrency(helocInterest)}</td>
