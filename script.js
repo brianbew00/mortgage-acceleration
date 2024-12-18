@@ -71,15 +71,30 @@ calculateWithHELOC(
 }
 
 // Scenario 1: No Extra Payments
-function calculateNoExtra(balance, rate, payment, annualBalancesNoExtra, annualInterestNoExtra) {
+function calculateNoExtra(
+    balance,               // Mortgage balance
+    rate,                  // Monthly mortgage interest rate
+    payment,               // Fixed monthly mortgage payment
+    annualBalancesNoExtra, // Combined balances for chart
+    annualInterestNoExtra  // Combined interest for chart
+) {
     let totalInterest = 0;
     let months = 0;
 
-    // Add the initial values as the first row
+    // Add initial row for charts
     annualBalancesNoExtra.push(balance);
     annualInterestNoExtra.push(0);
 
-    let table = "<div class='table-wrapper'><table><tr><th>Month</th><th>Payment</th><th>Interest</th><th>Principal</th><th>Balance</th></tr>";
+    let table = `
+        <div class='table-wrapper'>
+            <table>
+                <tr>
+                    <th>Month</th>
+                    <th>Mortgage Payment</th>
+                    <th>Mortgage Interest</th>
+                    <th>Principal</th>
+                    <th>Mortgage Balance</th>
+                </tr>`;
 
     // First row with initial values
     table += `
@@ -91,42 +106,74 @@ function calculateNoExtra(balance, rate, payment, annualBalancesNoExtra, annualI
             <td>${formatCurrency(balance)}</td>
         </tr>`;
 
-    while (balance > 0) {
-        const interest = balance * rate;
-        const principal = Math.min(payment - interest, balance);
-        balance = Math.max(balance - principal, 0);
-        totalInterest += interest;
+    const maxMonths = 360; // Failsafe: max 30 years
+    while (balance > 0 && months < maxMonths) {
+        // Calculate mortgage interest
+        const mortgageInterest = balance * rate;
+
+        // Adjust mortgage payment if it exceeds balance + interest
+        let adjustedPayment = Math.min(payment, balance + mortgageInterest);
+
+        // Calculate principal
+        const principal = Math.max(adjustedPayment - mortgageInterest, 0);
+
+        // Update mortgage balance
+        balance = Math.max(balance + mortgageInterest - adjustedPayment, 0);
+
+        totalInterest += mortgageInterest;
         months++;
 
+        // Append row to table
         table += `
             <tr>
                 <td>${months}</td>
-                <td>${formatCurrency(payment)}</td>
-                <td>${formatCurrency(interest)}</td>
+                <td>${formatCurrency(adjustedPayment)}</td>
+                <td>${formatCurrency(mortgageInterest)}</td>
                 <td>${formatCurrency(principal)}</td>
                 <td>${formatCurrency(balance)}</td>
             </tr>`;
 
+        // Update annual data for charts
         if (months % 12 === 0 || balance === 0) {
             annualBalancesNoExtra.push(balance);
             annualInterestNoExtra.push(totalInterest);
         }
     }
 
+    // Close the table
     table += "</table></div>";
+
+    // Insert table into the DOM
     document.getElementById("tableNoExtra").innerHTML = table;
 }
 
 // Scenario 2: Extra Monthly Principal Payments
-function calculateExtraPrincipal(balance, rate, payment, surplus, annualBalancesExtra, annualInterestExtra) {
+function calculateExtraPrincipal(
+    balance,               // Mortgage balance
+    rate,                  // Monthly mortgage interest rate
+    payment,               // Fixed monthly mortgage payment
+    surplus,               // Extra principal payment
+    annualBalancesExtra,   // Combined balances for chart
+    annualInterestExtra    // Combined interest for chart
+) {
     let totalInterest = 0;
     let months = 0;
 
-    // Add the initial values as the first row
+    // Add initial row for charts
     annualBalancesExtra.push(balance);
     annualInterestExtra.push(0);
 
-    let table = "<div class='table-wrapper'><table><tr><th>Month</th><th>Payment</th><th>Interest</th><th>Principal</th><th>Extra Principal</th><th>Balance</th></tr>";
+    let table = `
+        <div class='table-wrapper'>
+            <table>
+                <tr>
+                    <th>Month</th>
+                    <th>Mortgage Payment</th>
+                    <th>Mortgage Interest</th>
+                    <th>Principal</th>
+                    <th>Extra Principal</th>
+                    <th>Mortgage Balance</th>
+                </tr>`;
 
     // First row with initial values
     table += `
@@ -139,31 +186,48 @@ function calculateExtraPrincipal(balance, rate, payment, surplus, annualBalances
             <td>${formatCurrency(balance)}</td>
         </tr>`;
 
-    while (balance > 0) {
-        const interest = balance * rate;
-        let extraPrincipal = surplus;
-        let principal = Math.min(payment - interest, balance);
-        balance = Math.max(balance - principal - extraPrincipal, 0);
-        totalInterest += interest;
+    const maxMonths = 360; // Failsafe: max 30 years
+    while (balance > 0 && months < maxMonths) {
+        // Calculate mortgage interest
+        const mortgageInterest = balance * rate;
+
+        // Adjust mortgage payment if it exceeds balance + interest
+        let adjustedPayment = Math.min(payment, balance + mortgageInterest);
+
+        // Calculate principal
+        const principal = Math.max(adjustedPayment - mortgageInterest, 0);
+
+        // Adjust extra principal if necessary
+        const extraPrincipal = Math.min(surplus, balance - principal);
+
+        // Update mortgage balance
+        balance = Math.max(balance + mortgageInterest - adjustedPayment - extraPrincipal, 0);
+
+        totalInterest += mortgageInterest;
         months++;
 
+        // Append row to table
         table += `
             <tr>
                 <td>${months}</td>
-                <td>${formatCurrency(payment)}</td>
-                <td>${formatCurrency(interest)}</td>
+                <td>${formatCurrency(adjustedPayment)}</td>
+                <td>${formatCurrency(mortgageInterest)}</td>
                 <td>${formatCurrency(principal)}</td>
                 <td>${formatCurrency(extraPrincipal)}</td>
                 <td>${formatCurrency(balance)}</td>
             </tr>`;
 
+        // Update annual data for charts
         if (months % 12 === 0 || balance === 0) {
             annualBalancesExtra.push(balance);
             annualInterestExtra.push(totalInterest);
         }
     }
 
+    // Close the table
     table += "</table></div>";
+
+    // Insert table into the DOM
     document.getElementById("tableExtra").innerHTML = table;
 }
 
