@@ -250,7 +250,7 @@ function calculateWithHELOC(
     annualBalancesHELOC,   // Combined balances for chart
     annualInterestHELOC    // Combined interest for chart
 ) {
-    let helocBalance = 0;   // HELOC balance
+    let helocBalance = 0;   // Initialize HELOC balance
     let totalInterest = 0;  // Total interest (mortgage + HELOC)
     let months = 0;
 
@@ -311,12 +311,13 @@ function calculateWithHELOC(
 
         // Step 3: Calculate HELOC interest and payment
         const effectiveHELOCBalance = Math.max(helocBalance - averageDailyOffset, 0); // Apply offset
-        const helocInterest = effectiveHELOCBalance * helocRate;
+        const helocInterest = effectiveHELOCBalance > 0 ? effectiveHELOCBalance * helocRate : 0;
         const helocPayment = Math.min(surplusIncome, helocBalance + helocInterest);
 
         // Update HELOC balance
         helocBalance = Math.max(helocBalance + helocInterest - helocPayment, 0);
 
+        // Accumulate total interest
         totalInterest += mortgageInterest + helocInterest;
         months++;
 
